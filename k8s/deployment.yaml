@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hello-service
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: hello-service
+  template:
+    metadata:
+      labels:
+        app: hello-service
+    spec:
+      imagePullSecrets:
+        - name: jfrog-registry-secret
+      containers:
+        - name: hello-service
+          image: dmp-docker-development.pub-repo.prod.us-west-2.aws.fico.com/fico/hello-service:1.0.0
+          ports:
+            - containerPort: 8080
+          readinessProbe:
+            httpGet:
+              path: /hello
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 5

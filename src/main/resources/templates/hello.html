@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hello Service</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #0d1117;
+            color: #e6edf3;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .card {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 12px;
+            padding: 48px 56px;
+            text-align: center;
+            max-width: 480px;
+            width: 100%;
+        }
+
+        .badge {
+            display: inline-block;
+            background: #1f6feb22;
+            border: 1px solid #1f6feb55;
+            color: #58a6ff;
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            padding: 4px 12px;
+            border-radius: 20px;
+            margin-bottom: 24px;
+        }
+
+        h1 {
+            font-size: 2.2rem;
+            font-weight: 700;
+            margin-bottom: 12px;
+            background: linear-gradient(135deg, #58a6ff, #a5f3fc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .sub {
+            color: #8b949e;
+            font-size: 14px;
+            margin-bottom: 32px;
+        }
+
+        .divider {
+            border: none;
+            border-top: 1px solid #30363d;
+            margin: 0 0 28px;
+        }
+
+        .try-section label {
+            display: block;
+            font-size: 12px;
+            color: #8b949e;
+            text-align: left;
+            margin-bottom: 6px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .input-row {
+            display: flex;
+            gap: 8px;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            background: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            color: #e6edf3;
+            font-size: 14px;
+            padding: 8px 12px;
+            outline: none;
+            transition: border-color .2s;
+        }
+
+        input[type="text"]:focus {
+            border-color: #1f6feb;
+        }
+
+        button {
+            background: #1f6feb;
+            border: none;
+            border-radius: 6px;
+            color: #fff;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            padding: 8px 18px;
+            transition: background .2s;
+        }
+
+        button:hover { background: #388bfd; }
+
+        .service-tag {
+            margin-top: 28px;
+            font-size: 11px;
+            color: #484f58;
+        }
+    </style>
+</head>
+<body>
+<div class="card">
+    <div class="badge">hello-service</div>
+    <h1 th:text="${message}">Hello, World!</h1>
+    <p class="sub" th:text="'Welcome, ' + ${name} + '. The service is running.'">
+        Welcome. The service is running.
+    </p>
+
+    <hr class="divider">
+
+    <div class="try-section">
+        <label>Try another name</label>
+        <div class="input-row">
+            <input type="text" id="nameInput" placeholder="Enter a name..." />
+            <button onclick="greet()">Greet</button>
+        </div>
+    </div>
+
+    <p class="service-tag">Spring Boot 4.1.1 &nbsp;·&nbsp; Java 17 &nbsp;·&nbsp; Thymeleaf</p>
+</div>
+
+<script>
+    function greet() {
+        const name = document.getElementById('nameInput').value.trim();
+        if (name) window.location.href = '/hello?name=' + encodeURIComponent(name);
+    }
+    document.getElementById('nameInput').addEventListener('keydown', e => {
+        if (e.key === 'Enter') greet();
+    });
+</script>
+</body>
+</html>
