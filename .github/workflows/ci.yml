@@ -8,9 +8,8 @@ on:
 
 env:
   APP_VERSION: 1.0.0
-  JFROG_PUSH_REGISTRY: dmp-docker-development.repo.prod.us-west-2.aws.fico.com
-  JFROG_PULL_REGISTRY: dmp-docker-development.pub-repo.prod.us-west-2.aws.fico.com
-  IMAGE_NAME: fico/hello-service
+  DOCKERHUB_USERNAME: jasjitrudra77
+  IMAGE_NAME: hello-service
 
 jobs:
   build-and-test:
@@ -45,6 +44,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: build-and-test
     if: github.ref == 'refs/heads/master' && github.event_name == 'push'
+
     outputs:
       image_tag: ${{ steps.tag.outputs.tag }}
       full_image: ${{ steps.tag.outputs.full_image }}
@@ -70,29 +70,29 @@ jobs:
           TS=$(date -u +'%Y-%m-%d_%H%M%S')
           TAG="${{ env.APP_VERSION }}_${SHA}_${TS}"
           echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
-          echo "full_image=${{ env.JFROG_PULL_REGISTRY }}/${{ env.IMAGE_NAME }}:${TAG}" >> "$GITHUB_OUTPUT"
+          echo "full_image=${{ env.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:${TAG}" >> "$GITHUB_OUTPUT"
 
-      - name: Log in to JFrog
+      - name: Log in to Docker Hub
         uses: docker/login-action@v3
         with:
-          registry: ${{ env.JFROG_PUSH_REGISTRY }}
-          username: ${{ secrets.JFROG_USERNAME }}
-          password: ${{ secrets.JFROG_PASSWORD }}
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Build and push Docker image
         run: |
-          PUSH_TAG="${{ env.JFROG_PUSH_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.tag.outputs.tag }}"
+          PUSH_TAG="${{ env.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:${{ steps.tag.outputs.tag }}"
           docker build -t "${PUSH_TAG}" .
           docker push "${PUSH_TAG}"
           docker pull "${PUSH_TAG}"
 
       - name: Smoke test image
         run: |
-          PUSH_TAG="${{ env.JFROG_PUSH_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.tag.outputs.tag }}"
+          PUSH_TAG="${{ env.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:${{ steps.tag.outputs.tag }}"
           docker run -d --name hello-test -p 8080:8080 "${PUSH_TAG}"
           sleep 8
           curl --fail http://localhost:8080/hello || (docker logs hello-test && exit 1)
-          docker stop hello-test && docker rm hello-test
+          docker stop hello-test
+          docker rm hello-test
 
   update-manifest:
     name: Update K8s Manifest

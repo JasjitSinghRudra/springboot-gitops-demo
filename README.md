@@ -11,7 +11,7 @@ A Spring Boot 4.1.1 web application with a `/hello` endpoint, containerized with
 | Application | Spring Boot 4.1.1, Java 17, Thymeleaf |
 | Build | Maven |
 | Container | Docker (eclipse-temurin:17-jre) |
-| Registry | JFrog Artifactory |
+| Registry | Dockerhub |
 | CI | GitHub Actions |
 | CD | ArgoCD |
 | Runtime | Kubernetes (minikube) |
@@ -105,7 +105,7 @@ Developer pushes to master
          ▼
 ┌────────────────────────┐
 │  docker-build-push     │  Build image, tag as {version}_{sha7}_{timestamp}
-│                        │  Push to JFrog (dmp-docker-development.repo.*)
+│                        │  Push to Dockerhub
 │                        │  Smoke test via docker run + curl /hello
 └────────┬───────────────┘
          │
@@ -138,7 +138,7 @@ Matches the project's existing Jenkins convention:
 | Job | Trigger | What it does |
 |---|---|---|
 | `build-and-test` | push + PR | Compiles, runs tests, uploads jar |
-| `docker-build-push` | push to master only | Builds + pushes image to JFrog, smoke tests |
+| `docker-build-push` | push to master only | Builds + pushes image to dockerhub, smoke tests |
 | `update-manifest` | push to master only | Updates `k8s/deployment.yaml` and commits back |
 
 Pull requests only run `build-and-test` — no image push.
@@ -153,8 +153,6 @@ Go to: **GitHub repo → Settings → Secrets and variables → Actions**
 
 | Secret | Description |
 |---|---|
-| `JFROG_USERNAME` | JFrog Artifactory username |
-| `JFROG_PASSWORD` | JFrog Artifactory password or API token |
 | `GIT_TOKEN` | GitHub PAT with `repo` scope (for the manifest commit-back step) |
 
 ### Required Permission
@@ -165,19 +163,7 @@ Go to: **Settings → Actions → General → Workflow permissions** → enable 
 
 ## ArgoCD Setup (minikube)
 
-### 1. Create imagePullSecret
-
-ArgoCD/Kubernetes needs credentials to pull the image from JFrog:
-
-```bash
-kubectl create secret docker-registry jfrog-registry-secret \
-  --docker-server=dmp-docker-development.pub-repo.prod.us-west-2.aws.fico.com \
-  --docker-username=YOUR_JFROG_USERNAME \
-  --docker-password=YOUR_JFROG_PASSWORD \
-  --namespace=default
-```
-
-### 2. (Private repo only) Register the Git repo with ArgoCD
+### 1. (Private repo only) Register the Git repo with ArgoCD
 
 ```bash
 argocd repo add https://github.com/YOUR_USERNAME/hello-service \
@@ -187,7 +173,7 @@ argocd repo add https://github.com/YOUR_USERNAME/hello-service \
 
 Skip this step if the repository is public.
 
-### 3. Apply the ArgoCD Application
+### 2. Apply the ArgoCD Application
 
 Update `argocd/application.yaml` — replace `YOUR_GITHUB_USERNAME` with your actual username — then apply:
 
@@ -197,7 +183,7 @@ kubectl apply -f argocd/application.yaml
 
 ArgoCD will immediately sync and deploy. After that, every CI run that updates `k8s/deployment.yaml` triggers an automatic sync.
 
-### 4. Access the app
+### 3. Access the app
 
 ```bash
 minikube service hello-service --url
@@ -221,7 +207,5 @@ act pull_request
 
 # Run the full pipeline (simulates a push to master)
 act push \
-  -s JFROG_USERNAME=youruser \
-  -s JFROG_PASSWORD=yourpassword \
   -s GIT_TOKEN=yourtoken
 ```
