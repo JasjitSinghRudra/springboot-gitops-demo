@@ -197,15 +197,93 @@ curl http://$(minikube ip):30080/hello
 
 ---
 
-## Local CI Simulation (nektos/act)
+## Running Everything Locally
 
-Test the pipeline locally without pushing to GitHub:
+---
+
+### 1. Start minikube
 
 ```bash
-# Run only build-and-test (simulates a pull_request event)
-act pull_request
+minikube start
+```
 
-# Run the full pipeline (simulates a push to master)
-act push \
-  -s GIT_TOKEN=yourtoken
+---
+
+### 2. Install ArgoCD
+
+```bash
+kubectl create namespace argocd
+kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml --server-side
+
+# Wait for ArgoCD to be ready
+kubectl wait --for=condition=available --timeout=180s deployment/argocd-server -n argocd
+```
+
+---
+
+### 3. Deploy the ArgoCD Application
+
+```bash
+kubectl apply -f k8s/argocd-app.yaml
+```
+
+ArgoCD will immediately sync `k8s/deployment.yaml` from the GitHub repo and deploy hello-service to minikube.
+
+Check status:
+
+```bash
+kubectl get application hello-service -n argocd
+```
+
+---
+
+### 4. Access the app
+
+```bash
+# Port-forward the service
+kubectl port-forward svc/hello-service 9090:80 -n default
+```
+
+Then open: `http://localhost:9090/hello`
+
+---
+
+### 5. Access the ArgoCD UI
+
+```bash
+# Port-forward the ArgoCD server
+kubectl port-forward svc/argocd-server -n argocd 8080:443
+
+# Get the initial admin password
+kubectl get secret argocd-initial-admin-secret -n argocd \
+  -o jsonpath="{.data.password}" | base64 -d
+```
+
+Open `https://localhost:8080` and log in with username `admin`.
+
+---
+
+### 6. Run CI locally with act
+
+Create a `.secrets` file in the project root (already gitignored):
+
+```
+DOCKERHUB_USERNAME=your_dockerhub_username
+DOCKERHUB_TOKEN=your_dockerhub_token
+GIT_TOKEN=your_github_pat
+```
+
+Then run the full pipeline:
+
+```bash
+act --secret-file .secrets
+```
+
+This simulates a push to master: builds the jar, builds and pushes the Docker image, updates `k8s/deployment.yaml` with the new image tag, and pushes the manifest back to GitHub. ArgoCD will detect the change within 3 minutes and roll out the update to minikube.
+
+To force an immediate sync without waiting:
+
+```bash
+kubectl annotate application hello-service -n argocd \
+  argocd.argoproj.io/refresh=hard --overwrite
 ```
