@@ -12,7 +12,8 @@ spec:
     metadata:
       labels:
         app: hello-service
-      containers:
+  spec:
+    containers:
         - name: hello-service
           image: jasjitrudra77/hello-service:latest
           ports:
